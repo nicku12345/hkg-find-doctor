@@ -63,13 +63,13 @@ def get_soup(url) -> BeautifulSoup:
 def fetch_doctor_info(url: str) -> dict:
     soup = get_soup(url)
     return {
-        "doctor_name_tc": get_doctor_name_tc(soup),
-        "doctor_name_en": get_doctor_name_en(soup),
+        "doctorNameTC": get_doctor_name_tc(soup),
+        "doctorNameEN": get_doctor_name_en(soup),
         "telephone": get_telephone(soup),
-        "medical_specialty": get_medical_specialty(soup),
-        "address_desc": get_address_desc(soup),
-        "address_latitude": get_address_latitude(soup),
-        "address_longitude": get_address_longitude(soup),
+        "medicalSpecialty": get_medical_specialty(soup),
+        "addressDesc": get_address_desc(soup),
+        "addressLatitude": get_address_latitude(soup),
+        "addressLongitude": get_address_longitude(soup),
         "qualifications": get_qualifications(soup),
     }
 

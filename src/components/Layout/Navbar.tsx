@@ -11,7 +11,7 @@ export const Navbar: React.FC = () => {
         <nav className="bg-gray-500 p-4 sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
                 <div className="text-white text-lg font-semibold">
-                    Nicku UI Template
+                    👨🏻‍⚕️HKG Find Doctor
                 </div>
                 <div className="flex space-x-4">
                     {

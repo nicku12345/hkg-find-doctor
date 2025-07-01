@@ -1,5 +1,7 @@
-import { Layout } from "./components/layout/Layout.tsx";
-import { Tab } from "./components/layout/Tab.tsx";
+import { Layout } from "./components/Layout/Layout.tsx";
+import { Tab } from "./components/Layout/Tab.tsx";
+
+import process from "node:process";
 
 function App() {
   return (

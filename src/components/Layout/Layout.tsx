@@ -1,6 +1,7 @@
 import React from "react";
 import { Navbar } from "./Navbar.tsx";
 import { Footer } from "./Footer.tsx";
+import { Error } from "../Layout/Error.tsx";
 
 
 interface LayoutProps {
@@ -13,6 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }: { children: React.Re
             <div className="max-w-[650px] mx-auto min-h-screen max-w-2xl mx-auto bg-white shadow-md rounded-lg">
                 <div className="flex flex-col min-h-screen">
                     <Navbar/>
+                    <Error/>
                     <div className="flex-grow">
                         {children}
                     </div>

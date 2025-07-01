@@ -1,12 +1,12 @@
-import { TabId } from "../../components/layout/Tab.tsx";
+import { TabId } from "../../components/Layout/Tab.tsx";
 
 const initialState = {
-    id: TabId.Tab1
+    id: TabId.Map
 }
 
 type Action = { type: "SET_TAB"; payload: { id: TabId } }
 
-const tabReducer = (state = initialState, action: Action): (typeof initialState) => {
+export const tabReducer = (state = initialState, action: Action): (typeof initialState) => {
     switch (action.type) {
         case "SET_TAB":
             return { id: action.payload.id }
@@ -15,5 +15,3 @@ const tabReducer = (state = initialState, action: Action): (typeof initialState)
             return state
     }
 }
-
-export default tabReducer

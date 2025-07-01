@@ -24,4 +24,10 @@ dist-ssr
 *.sln
 *.sw?
 
-data/*.csv
+# local netlify folder
+.netlify
+
+# data
+data/*
+
+.env

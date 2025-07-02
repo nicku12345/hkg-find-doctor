@@ -1,6 +1,6 @@
-# Nicku UI Template
+# HKG Find Doctor
 
-Created as of 2025 Jun
+Find doctors nearby
 
 ## Initialize
 

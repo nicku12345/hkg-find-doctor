@@ -1,4 +1,25 @@
 
+export const HKG_DC_DISTRICTS_TC = [
+    "中西區",
+    "灣仔區",
+    "東區",
+    "南區",
+    "油尖旺區",
+    "深水埗區",
+    "九龍城區",
+    "黃大仙區",
+    "觀塘區",
+    "荃灣區",
+    "屯門區",
+    "元朗區",
+    "北區",
+    "大埔區",
+    "西貢區",
+    "沙田區",
+    "葵青區",
+    "離島區",
+]
+
 type MapLocationDesc = {
     buildingName?: string,
 
@@ -45,16 +66,26 @@ const getBuildingDesc = (x: MapLocationDesc): string => {
     const block = [x.blockNo, x.blockDescriptor]
         .filter(x => x !== undefined)
         .join("")
+        .trim()
+
+    if (getEstateDesc(x) !== "" && x.buildingName !== undefined) {
+        return [getEstateDesc(x), x.buildingName, block]
+            .filter(x => x !== undefined)
+            .join(" ")
+            .trim()
+    }
 
     return [x.buildingName ?? getEstateDesc(x), block]
         .filter(x => x !== undefined)
         .join(" ")
+        .trim()
 }
 
 const getEstateDesc = (x: MapLocationDesc): string => {
     return [x.estateName, x.estatePhaseName]
         .filter(x => x !== undefined)
         .join(" ")
+        .trim()
 }
 
 const getStreetDesc = (x: MapLocationDesc): string => {
@@ -63,6 +94,7 @@ const getStreetDesc = (x: MapLocationDesc): string => {
     return [streetName, streetBuildingNo]
         .filter(x => x !== undefined)
         .join(" ")
+        .trim()
 }
 
 const getVillageDesc = (x: MapLocationDesc): string => {
@@ -71,6 +103,7 @@ const getVillageDesc = (x: MapLocationDesc): string => {
     return [villageName, villageBuildingNo]
         .filter(x => x !== undefined)
         .join(" ")
+        .trim()
 }
 
 const getDistrictDesc = (x: MapLocationDesc): string => {

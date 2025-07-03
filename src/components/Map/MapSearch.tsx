@@ -1,70 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-
-type MapLocation = {
-    descTC: string,
-    descEN: string,
-    districtTC: string,
-    districtEN: string,
-    latitude: number,
-    longitude: number,
-}
-
-const getSuggestedMapLocations = async (query: string): Promise<MapLocation[]> => {
-    if (query === "") {
-        return []
-    }
-
-    const api = `https://www.als.gov.hk/lookup?q=${query}&n=20`
-
-    // refer to the doc https://www.als.gov.hk/docs/Data_Dictionary_for_ALS_TC-v3.2.pdf
-    const res = await fetch(api, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Accept-Language': 'en,zh-Hant',
-        }
-    })
-    const locations = await res.json()
-
-    // schema follows https://www.als.gov.hk/lookup?q=Kwai%20Chung&n=20
-    const uniqueDescTC = new Set() // use descTC as key to dedup
-    return locations
-        .SuggestedAddress
-        .filter((x: typeof locations.SuggestedAddress) => 
-            (
-                x.Address?.PremisesAddress?.ChiPremisesAddress?.BuildingName
-                || x.Address?.PremisesAddress?.ChiPremisesAddress?.ChiEstate?.EstateName
-            ) || (
-                x.Address?.PremisesAddress?.EngPremisesAddress?.BuildingName
-                || x.Address?.PremisesAddress?.EngPremisesAddress?.EngEstate?.EstateName
-            )
-        )
-        .map((x: typeof locations.SuggestedAddress): MapLocation => {
-            const buildingNameTC = x.Address.PremisesAddress.ChiPremisesAddress?.BuildingName ?? ""
-            const buildingNameEN = x.Address.PremisesAddress.EngPremisesAddress?.BuildingName ?? ""
-            const estateNameTC = x.Address.PremisesAddress.ChiPremisesAddress?.ChiEstate?.EstateName ?? ""
-            const estateNameEN = x.Address.PremisesAddress.EngPremisesAddress?.EngEstate?.EstateName ?? ""
-
-            const descTC = `${estateNameTC} ${buildingNameTC}`.trim()
-            const descEN = `${estateNameEN} ${buildingNameEN}`.trim()
-
-            return {
-                descTC: descTC !== "" ? descTC : descEN,
-                descEN: descEN,
-                districtTC: x.Address.PremisesAddress.ChiPremisesAddress?.ChiDistrict?.DcDistrict,
-                districtEN: x.Address.PremisesAddress.EngPremisesAddress?.EngDistrict?.DcDistrict,
-                latitude: x.Address.PremisesAddress.GeospatialInformation.Latitude,
-                longitude: x.Address.PremisesAddress.GeospatialInformation.Longitude,
-            }
-        })
-        .filter(({ descTC }: { descTC: string }) => {
-            if (uniqueDescTC.has(descTC))
-                return false;
-            uniqueDescTC.add(descTC)
-            return true;
-        })
-}
+import { getSuggestedMapLocations, MapLocation } from "../../utils/map.ts";
 
 const MapSearch: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -90,6 +26,7 @@ const MapSearch: React.FC = () => {
     useEffect(() => {
         const handler = setTimeout(async () => {
             const res = await getSuggestedMapLocations(query);
+            console.log(res)
             setSuggestedMapLocations(res)
         }, 300); // Delay of 0.3 seconds
 
@@ -161,7 +98,7 @@ const MapSearch: React.FC = () => {
                                     onClick={() => handleSelect(location)}
                                 >
                                     <h2 className="text-lg font-semibold text-gray-800">{location.descTC}</h2>
-                                    <p className="text-sm text-gray-600">{location.districtTC}</p>
+                                    <p className="text-sm text-gray-600">{location.suppDescTC}</p>
                                 </div>
                             </li>
                         ))}

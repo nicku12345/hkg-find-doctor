@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { parseStringPromise } from 'xml2js';
 import { useDispatch } from 'react-redux';
 
 type MapLocation = {
     descTC: string,
     descEN: string,
+    districtTC: string,
+    districtEN: string,
     latitude: number,
     longitude: number,
 }
@@ -15,37 +16,49 @@ const getSuggestedMapLocations = async (query: string): Promise<MapLocation[]> =
     }
 
     const api = `https://www.als.gov.hk/lookup?q=${query}&n=20`
-    const res = await fetch(api)
-    const locations = await parseStringPromise(await res.text())
+
+    // refer to the doc https://www.als.gov.hk/docs/Data_Dictionary_for_ALS_TC-v3.2.pdf
+    const res = await fetch(api, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Accept-Language': 'en,zh-Hant',
+        }
+    })
+    const locations = await res.json()
 
     // schema follows https://www.als.gov.hk/lookup?q=Kwai%20Chung&n=20
     const uniqueDescTC = new Set() // use descTC as key to dedup
     return locations
-        .AddressLookupResult
         .SuggestedAddress
-        .filter(x => 
+        .filter((x: typeof locations.SuggestedAddress) => 
             (
-                x.Address?.[0]?.PremisesAddress?.[0]?.ChiPremisesAddress?.[0]?.BuildingName
-                || x.Address?.[0]?.PremisesAddress?.[0]?.ChiPremisesAddress?.[0]?.ChiEstate?.[0]?.EstateName
-            ) && (
-                x.Address?.[0]?.PremisesAddress?.[0]?.EngPremisesAddress?.[0]?.BuildingName
-                || x.Address?.[0]?.PremisesAddress?.[0]?.EngPremisesAddress?.[0]?.EngEstate?.[0]?.EstateName
+                x.Address?.PremisesAddress?.ChiPremisesAddress?.BuildingName
+                || x.Address?.PremisesAddress?.ChiPremisesAddress?.ChiEstate?.EstateName
+            ) || (
+                x.Address?.PremisesAddress?.EngPremisesAddress?.BuildingName
+                || x.Address?.PremisesAddress?.EngPremisesAddress?.EngEstate?.EstateName
             )
         )
-        .map(x => {
-            const buildingNameTC = x.Address?.[0]?.PremisesAddress?.[0]?.ChiPremisesAddress?.[0]?.BuildingName ?? ""
-            const buildingNameEN = x.Address?.[0]?.PremisesAddress?.[0]?.EngPremisesAddress?.[0]?.BuildingName ?? ""
-            const estateNameTC = x.Address?.[0]?.PremisesAddress?.[0]?.ChiPremisesAddress?.[0]?.ChiEstate?.[0]?.EstateName ?? ""
-            const estateNameEN = x.Address?.[0]?.PremisesAddress?.[0]?.EngPremisesAddress?.[0]?.EngEstate?.[0]?.EstateName ?? ""
+        .map((x: typeof locations.SuggestedAddress): MapLocation => {
+            const buildingNameTC = x.Address.PremisesAddress.ChiPremisesAddress?.BuildingName ?? ""
+            const buildingNameEN = x.Address.PremisesAddress.EngPremisesAddress?.BuildingName ?? ""
+            const estateNameTC = x.Address.PremisesAddress.ChiPremisesAddress?.ChiEstate?.EstateName ?? ""
+            const estateNameEN = x.Address.PremisesAddress.EngPremisesAddress?.EngEstate?.EstateName ?? ""
+
+            const descTC = `${estateNameTC} ${buildingNameTC}`.trim()
+            const descEN = `${estateNameEN} ${buildingNameEN}`.trim()
 
             return {
-                descTC: `${estateNameTC} ${buildingNameTC}`.trim(),
-                descEN: `${estateNameEN} ${buildingNameEN}`.trim(),
-                latitude: x.Address[0].PremisesAddress[0].GeospatialInformation[0].Latitude[0],
-                longitude: x.Address[0].PremisesAddress[0].GeospatialInformation[0].Longitude[0],
+                descTC: descTC !== "" ? descTC : descEN,
+                descEN: descEN,
+                districtTC: x.Address.PremisesAddress.ChiPremisesAddress?.ChiDistrict?.DcDistrict,
+                districtEN: x.Address.PremisesAddress.EngPremisesAddress?.EngDistrict?.DcDistrict,
+                latitude: x.Address.PremisesAddress.GeospatialInformation.Latitude,
+                longitude: x.Address.PremisesAddress.GeospatialInformation.Longitude,
             }
         })
-        .filter(({ descTC }) => {
+        .filter(({ descTC }: { descTC: string }) => {
             if (uniqueDescTC.has(descTC))
                 return false;
             uniqueDescTC.add(descTC)
@@ -78,12 +91,13 @@ const MapSearch: React.FC = () => {
         const handler = setTimeout(async () => {
             const res = await getSuggestedMapLocations(query);
             setSuggestedMapLocations(res)
-        }, 500); // Delay of 0.5 seconds
+        }, 300); // Delay of 0.3 seconds
 
         return () => {
             clearTimeout(handler); // Cleanup the timeout if query changes
         };
     }, [query]);
+
 
     const getLocationNavigator = () => {
         if (!navigator.geolocation) {
@@ -100,6 +114,9 @@ const MapSearch: React.FC = () => {
                 dispatch({ type: "SET_ERROR", payload: { error: err.message} })
             }
         );
+
+        if (isOpen)
+            setIsOpen(false)
     };
 
     return (
@@ -125,7 +142,7 @@ const MapSearch: React.FC = () => {
                 </button>
             </div>
             {isOpen && (
-                <div className="h-[calc(100vh-200px)] absolute z-10 left-0 right-0 bg-white border border-gray-300 shadow-lg overflow-hidden">
+                <div className="h-[calc(100vh-180px)] absolute z-10 left-0 right-0 bg-white border border-gray-300 shadow-lg overflow-hidden">
                     <div className="flex justify-end p-2">
                         <button 
                             onClick={() => setIsOpen(false)} 
@@ -136,18 +153,16 @@ const MapSearch: React.FC = () => {
                     </div>
 
                     <div className="border-t border-gray-200"></div>
-                    <ul className="list-none p-2">
+                    <ul className="list-none p-2 max-h-[calc(100vh-250px)] overflow-y-auto">
                         {suggestedMapLocations.map((location, index) => (
                             <li key={index} className="first:pt-0 last:pb-0">
                                 <div 
-                                    className="p-2 hover:bg-gray-100 cursor-pointer transition duration-200" 
+                                    className="p-4 m-2 bg-gray-100 rounded-lg shadow-md hover:shadow-lg transition duration-200 cursor-pointer"
                                     onClick={() => handleSelect(location)}
                                 >
-                                    {location.descTC} {/* Use the appropriate property you want to display */}
+                                    <h2 className="text-lg font-semibold text-gray-800">{location.descTC}</h2>
+                                    <p className="text-sm text-gray-600">{location.districtTC}</p>
                                 </div>
-                                {index < suggestedMapLocations.length - 1 && (
-                                    <div className="border-t border-gray-200"></div> // Horizontal separator
-                                )}
                             </li>
                         ))}
                     </ul>

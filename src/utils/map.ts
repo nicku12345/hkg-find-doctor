@@ -1,4 +1,3 @@
-
 export const HKG_DC_DISTRICTS_TC = [
     "中西區",
     "灣仔區",
@@ -164,7 +163,7 @@ export const getSuggestedMapLocations = async (query: string): Promise<MapLocati
     const uniqueDescTC = new Set() // use descTC as key to dedup
     return locations
         .SuggestedAddress
-        .map((x: typeof locations.SuggestedAddress): MapLocationFull => {
+        ?.map((x: typeof locations.SuggestedAddress): MapLocationFull => {
             return {
                 latitude: x.Address.PremisesAddress.GeospatialInformation.Latitude,
                 longitude: x.Address.PremisesAddress.GeospatialInformation.Longitude,
@@ -224,4 +223,5 @@ export const getSuggestedMapLocations = async (query: string): Promise<MapLocati
             uniqueDescTC.add(descTC)
             return true
         })
+        ?? []
 }

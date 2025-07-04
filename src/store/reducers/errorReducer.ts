@@ -1,9 +1,8 @@
-
 const initialState: { error: string | null } = {
     error: null
 }
 
-type Action = { type: "SET_ERROR"; payload: { error: string | null } }
+export type Action = { type: "SET_ERROR"; payload: { error: string | null } }
 
 export const errorReducer = (state = initialState, action: Action): (typeof initialState) => {
     switch (action.type) {

@@ -1,10 +1,7 @@
 
-import React, { useEffect } from 'react';
-import { MapControl } from "./MapControl.tsx";
-import { MapWidget } from "./MapWidget.tsx";
+import React from 'react';
 import 'leaflet/dist/leaflet.css';
-import { connectAndQuery } from "../../db/db.ts";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "../../store/store.ts";
 
 

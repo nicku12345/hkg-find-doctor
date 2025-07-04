@@ -1,4 +1,3 @@
-
 export type Doctor = {
     doctorNameTC: string,
     doctorNameEN: string,

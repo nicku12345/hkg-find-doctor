@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { MapControl } from "./MapControl.tsx";
 import { MapWidget } from "./MapWidget.tsx";
 import 'leaflet/dist/leaflet.css';
 import { connectAndQuery } from "../../db/db.ts";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../store/store.ts";
+import { useDispatch } from "react-redux";
 import { MapList } from "./MapList.tsx";
+import MapSearch from "./MapSearch.tsx";
 
 
 export const Map: React.FC = () => {
@@ -21,7 +20,7 @@ export const Map: React.FC = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-112px)]">
-            <MapControl/>
+            <MapSearch/>
             <MapWidget/>
             <div className="flex-1 overflow-y-auto p-4">
                 <MapList/>

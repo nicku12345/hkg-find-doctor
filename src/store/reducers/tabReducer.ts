@@ -4,7 +4,7 @@ const initialState = {
     id: TabId.Map
 }
 
-type Action = { type: "SET_TAB"; payload: { id: TabId } }
+export type Action = { type: "SET_TAB"; payload: { id: TabId } }
 
 export const tabReducer = (state = initialState, action: Action): (typeof initialState) => {
     switch (action.type) {

@@ -1,9 +1,6 @@
 -- Create a dedicated separate schema
 create schema if not exists "gis";
 
--- Example: enable the "postgis" extension
-create extension postgis with schema "gis";
-
 -- Step 1: Add the new column
 ALTER TABLE "DoctorInfo"
 ADD COLUMN location gis.GEOGRAPHY(Point, 4326);

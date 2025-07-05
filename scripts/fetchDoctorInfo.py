@@ -50,15 +50,21 @@ def get_als_coordinate(address_desc: str) -> float:
     geo_info = j["SuggestedAddress"][0]["Address"]["PremisesAddress"]["GeospatialInformation"]
     return geo_info
 
-# DO NOT TRUST the address from source
-# re-compute the address coordinates here using als gov API
 def get_address_latitude(soup: BeautifulSoup) -> float:
-    address_desc = get_address_desc(soup)
-    return get_als_coordinate(address_desc)["Latitude"]
+    try:
+        google_map_url = get_address_url(soup)
+        return float(google_map_url.split("?q=")[-1].split(",")[0])
+    except:
+        address_desc = get_address_desc(soup)
+        return float(get_als_coordinate(address_desc)["Latitude"])
 
 def get_address_longitude(soup: BeautifulSoup) -> float:
-    address_desc = get_address_desc(soup)
-    return get_als_coordinate(address_desc)["Longitude"]
+    try:
+        google_map_url = get_address_url(soup)
+        return float(google_map_url.split("?q=")[-1].split(",")[1])
+    except:
+        address_desc = get_address_desc(soup)
+        return float(get_als_coordinate(address_desc)["Longitude"])
 
 def get_qualifications(soup: BeautifulSoup) -> list[str]:
     detail1 = soup.find("div", id="detail1")
@@ -76,6 +82,7 @@ def parse_opening_hours_line(line: str) -> dict:
     # Different ":"'s !
     split_char = "@@"
     line = line.replace("︰", split_char).replace("：", split_char)
+    line = line.replace("–", "-")
 
     # Special case
     # 星期一 10:00-18:00
@@ -105,7 +112,7 @@ def parse_opening_hours_line(line: str) -> dict:
     if "off" in suff or "close" in suff or "休息" in suff:
         return {
             "key": key,
-            "value": [],  # No business
+            "value": "NO_BUSINESS"  # holiday
         }
     
     suff = suff.replace(" - ", "-").replace(";", " ").replace(",", " ")
@@ -137,10 +144,10 @@ def parse_opening_hours_line(line: str) -> dict:
                 "to":   { "h": hh_to,   "m": mm_to   },
             })
 
-    return {
-        "key": key,
-        "value": values
-    }
+    if len(values)>0:
+        return { "key": key, "value": values }
+
+    return { "key": key, "value": "NO_INFO" }  # we failed to parse
 
 def get_opening_hours(soup: BeautifulSoup) -> dict[str, list[dict[str, str]]]:
     opening_hours = soup.find("span", itemprop="openingHours").text

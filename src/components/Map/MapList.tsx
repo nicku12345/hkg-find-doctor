@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store.ts";
-import { BusinessHour, DoctorBusinessHours } from "../../types/doctor.ts";
+import { BusinessHour, DoctorBusinessHours, WEEKDAYS } from "../../types/doctor.ts";
+import { isDoctorInBusinessHour } from "../../utils/doctor.ts";
 
 // select "medicalSpecialty", count(1) from "DoctorInfo"
 // group by "medicalSpecialty"
@@ -116,43 +117,60 @@ type DoctorBusinessHoursViewProps = {
 }
 
 const DoctorBusinessHoursView: React.FC<DoctorBusinessHoursViewProps> = ({ schedule }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
     const formatNumber = (x: number): string => (x < 10 ? `0${x}` : `${x}`);
     const formatInterval = (b: BusinessHour): string =>
         `${formatNumber(b.from.h)}:${formatNumber(b.from.m)} - ${formatNumber(b.to.h)}:${formatNumber(b.to.m)}`;
 
     return (
-        <div className="p-2">
-            {schedule.byAppointment && (
-                <span className="bg-gray-200 text-gray-600 p-1 rounded">By Appointment</span>
-            )}
-            <table className="min-w-full text-sm">
-                <tbody>
-                    {
-                        ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map(day => {
-                            if (schedule[day] === undefined) {
-                                return null;
-                            }
+        <div className="mt-2 bg-stone-100 shadow-md rounded-lg">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 flex justify-between w-full text-left rounded bg-stone-100 text-gray-600 font-semibold hover:bg-stone-300 focus:outline-none"
+            >
+                <span>Business Hours</span>
+                <span>{isOpen ? '−' : '+'}</span>
+            </button>
+            {isOpen && (
+                <div className="p-2">
+                    {schedule.byAppointment && (
+                        <div className="mb-2">
+                            <span className="bg-blue-200 text-blue-800 p-1 rounded text-xs font-semibold">
+                                By Appointment
+                            </span>
+                        </div>
+                    )}
+                    <table className="min-w-full text-sm">
+                        <tbody>
+                            {WEEKDAYS.map(day => {
+                                if (schedule[day] as BusinessHour === undefined || schedule[day] as BusinessHour === "NO_INFO") {
+                                    return null;
+                                }
 
-                            return (
-                                <tr key={day}>
-                                    <td className="font-semibold w-15">{day}</td>
-                                    <td>
-                                        {schedule[day].length === 0 ? (
-                                            <span className="bg-red-200 p-1 rounded">CLOSED</span>
-                                        ) : (
-                                            schedule[day].map((b, index) => (
-                                                <span key={index} className="bg-gray-200 text-gray-600 mr-2 p-1 rounded">
-                                                    {formatInterval(b)}
+                                return (
+                                    <tr key={day}>
+                                        <td className="font-semibold py-2 w-1/8">{day}</td>
+                                        <td className="py-2">
+                                            {schedule[day] as BusinessHour === "NO_BUSINESS" ? (
+                                                <span className="bg-red-200 text-red-800 p-2 rounded text-xs font-semibold">
+                                                    CLOSED
                                                 </span>
-                                            ))
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })
-                    }
-                </tbody>
-            </table>
+                                            ) : (
+                                                schedule[day].map((b, index) => (
+                                                    <span key={index} className="bg-gray-200 text-gray-600 mr-2 p-2 rounded text-xs">
+                                                        {formatInterval(b)}
+                                                    </span>
+                                                ))
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
@@ -167,7 +185,7 @@ export const MapList: React.FC = () => {
 
     return (
         <div>
-            <div className="p-2 sticky top-0 bg-white z-10 mb-3 shadow-md">
+            <div className="p-2 sticky top-0 bg-white z-5 mb-3 shadow-md">
                 <label htmlFor="specialtyFilter" className="block text-lg font-medium text-gray-700 mb-2">
                     Filter by Specialty:
                 </label>
@@ -186,20 +204,50 @@ export const MapList: React.FC = () => {
                 </select>
             </div>
             <ul className="space-y-4 p-2">
-                {filteredDoctors.map((doctor, index) => (
-<li key={index} className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between">
-    <div className="flex-1">
-        <h2 className="text-xl font-semibold text-gray-800">
-            {doctor.doctorNameEN} ({doctor.doctorNameTC})
-        </h2>
-        <p className="text-gray-600"><strong>💉</strong> {doctor.medicalSpecialty}</p>
-        <p className="text-gray-600"><strong>🎓</strong> {doctor.qualifications}</p>
-        <p className="text-gray-600"><strong>☎️</strong> {doctor.telephone}</p>
-        <p className="text-gray-600"><strong>📍</strong> {doctor.addressDesc}</p>
-        <DoctorBusinessHoursView schedule={JSON.parse(doctor.openingHours)}/>
-    </div>
-</li>
-                ))}
+                {filteredDoctors.map((doctor, index) => {
+                    const doctorBusinessStatus = isDoctorInBusinessHour(JSON.parse(doctor.openingHours))
+                    return (
+                        <li key={doctor.doctorNameEN + index} className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between">
+                            <div className="flex-1">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-semibold text-gray-800">
+                                        {doctor.doctorNameEN} ({doctor.doctorNameTC})
+                                    </h2>
+                                    {
+                                        doctorBusinessStatus === "CLOSED" ? (
+                                            <span className="bg-red-200 text-red-800 p-2 rounded text-xs font-semibold">
+                                                {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
+                                            </span>
+                                        ) : doctorBusinessStatus === "OPEN" ? (
+                                            <span className="bg-green-200 text-green-800 p-2 rounded text-xs font-semibold">
+                                                {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
+                                            </span>
+                                        ) : null
+                                    }
+                                </div>
+                                <p className="text-gray-600"><strong>💉</strong> {doctor.medicalSpecialty}</p>
+                                {
+                                    (JSON.parse(doctor.qualifications) as string[])
+                                        .filter(q => q.trim() !== "")
+                                        .map(qualification => (
+                                            <p className="text-gray-600"><strong>🎓</strong> {qualification}</p>
+                                        ))
+                                }
+                                {
+                                    doctor.telephone.trim() !== "" ? (
+                                        <p className="text-gray-600"><strong>☎️</strong> {doctor.telephone}</p>
+                                    ) : null
+                                }
+                                {
+                                    doctor.addressDesc.trim() !== "" ? (
+                                        <p className="text-gray-600"><strong>📍</strong> {doctor.addressDesc}</p>
+                                    ) : null
+                                }
+                                <DoctorBusinessHoursView schedule={JSON.parse(doctor.openingHours)}/>
+                            </div>
+                        </li>
+                    )}
+                )}
             </ul>
         </div>
     );

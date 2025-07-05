@@ -19,7 +19,7 @@ def main():
 
     # Drop the table if it exists
     with engine.connect() as connection:
-        connection.execute(text("DROP TABLE IF EXISTS \"DoctorInfo\""))
+        connection.execute(text("DROP TABLE IF EXISTS \"DoctorInfo\" CASCADE"))
         connection.commit()
 
     with open("./data/doctor_index_urls.json", "r") as f:

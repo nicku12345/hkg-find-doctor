@@ -1,6 +1,7 @@
 type MapState = {
     latitude: number,
     longitude: number,
+    zoom: number,
 
     selectedLocationDesc: string,
     filteredDistrict: string,
@@ -8,9 +9,12 @@ type MapState = {
     mapCenterFlag: boolean,
 }
 
+const GEOLOCATION_MAX_ZOOM = 20
+
 const initialState: MapState = {
     latitude: 22.3204,
     longitude: 114.1698,
+    zoom: GEOLOCATION_MAX_ZOOM,
 
     selectedLocationDesc: "",
     filteredDistrict: "",
@@ -29,6 +33,8 @@ export const geolocationReducer = (state = initialState, action: Action): MapSta
         case "REFRESH_LOCATION":
             return {
                 ...state,
+                zoom: GEOLOCATION_MAX_ZOOM,
+                mapCenterFlag: !state.mapCenterFlag,
                 latitude: action.payload.latitude,
                 longitude: action.payload.longitude,
             }
@@ -36,6 +42,8 @@ export const geolocationReducer = (state = initialState, action: Action): MapSta
         case "SET_SELECTED_LOCATION":
             return {
                 ...state,
+                zoom: GEOLOCATION_MAX_ZOOM,
+                mapCenterFlag: !state.mapCenterFlag,
                 selectedLocationDesc: action.payload.selectedLocationDesc
             }
 
@@ -48,8 +56,10 @@ export const geolocationReducer = (state = initialState, action: Action): MapSta
         case "TOGGLE_MAP_CENTER_FLAG":
             return {
                 ...state,
+                zoom: GEOLOCATION_MAX_ZOOM,
                 mapCenterFlag: !state.mapCenterFlag
             }
+        
         default:
             return state
     }

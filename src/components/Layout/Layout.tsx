@@ -18,7 +18,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }: { children: React.Re
                     <div className="flex-grow">
                         {children}
                     </div>
-                    <Footer/>
                 </div>
             </div>
         </div>

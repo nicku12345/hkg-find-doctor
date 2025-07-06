@@ -12,9 +12,7 @@ export const Map: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-112px)]">
             <MapSearch/>
             <MapWidget/>
-            <div className="flex-1 overflow-y-auto">
-                <MapList/>
-            </div>
+            <MapList/>
         </div>
     );
 };

@@ -1,10 +1,7 @@
-import { BusinessHour, DoctorBusinessHours, WEEKDAYS } from "../types/doctor.ts";
+import { BusinessHour, Doctor, DoctorBusinessHours, DoctorBusinessStatus, WEEKDAYS } from "../types/doctor.ts";
 
 
-export type DoctorBusinessStatus =
-    "OPEN"
-    | "CLOSED"
-    | "NO_INFO"
+
 
 export const isDoctorInBusinessHour = (schedule: DoctorBusinessHours): DoctorBusinessStatus => {
     const currentDate = new Date()
@@ -33,4 +30,8 @@ export const isDoctorInBusinessHour = (schedule: DoctorBusinessHours): DoctorBus
     }
 
     return "CLOSED"
+}
+
+export const doctorToId = (doctor: Doctor): string => {
+    return `${doctor.doctorNameTC}-${doctor.addressLatitude}-${doctor.addressLongitude}`
 }

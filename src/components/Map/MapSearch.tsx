@@ -1,63 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getSuggestedMapLocations, HKG_DC_DISTRICTS_TC, MapLocation } from "../../utils/map.ts";
+import { getSuggestedMapLocations, MapLocation } from "../../utils/map.ts";
 import { RootState } from "../../store/store.ts";
 import { Action } from "../../store/reducers/actions.ts";
 import { Dispatch } from "@reduxjs/toolkit";
 
 type MapFilterProps = {
-    options: string[],
     selected: string,
 }
-
-const MapFilter: React.FC<MapFilterProps> = ({ options, selected }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dispatch = useDispatch<Dispatch<Action>>()
-
-    const toggleDropdown = () => setIsOpen(!isOpen);
-    const handleSelectInner = (option: string) => {
-        dispatch({ type: "SET_FILTERED_DISTRICT", payload: { filteredDistrict: option }})
-        setIsOpen(false);
-    };
-
-    return (
-        <div className="relative">
-            <div 
-                className="flex items-center justify-between w-[150px] border border-gray-300 rounded px-2 py-1 cursor-pointer bg-white"
-                onClick={toggleDropdown}
-            >
-                <span>{selected !== "" ? selected : " - "}</span>
-                <svg 
-                    className="w-4 h-4 ml-2 text-gray-600" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                >
-                    <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M6 9l6 6 6-6" 
-                    />
-                </svg>
-            </div>
-            {isOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-[calc(100vh-150px)] overflow-y-auto">
-                    {options.map((option, index) => (
-                        <div 
-                            key={index} 
-                            className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleSelectInner(option)}
-                        >
-                            {option !== "" ? option : " - "}
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
 
 const MapSearch: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +62,8 @@ const MapSearch: React.FC = () => {
             },
             (err) => {
                 dispatch({ type: "SET_ERROR", payload: { error: err.message } })
-            }
+            },
+            { maximumAge: 0 },
         );
 
         if (isOpen)
@@ -153,11 +104,7 @@ const MapSearch: React.FC = () => {
             </div>
             {isOpen && (
                 <div className="h-[calc(100vh-155px)] absolute z-10 left-0 right-0 bg-white border border-gray-300 shadow-lg overflow-hidden">
-                    <div className="flex bg-amber-50 justify-end p-2">
-                        <div className="flex items-center bg-amber-200 p-1 pl-2 pr-2 rounded">
-                            <span className="mr-2">District: </span>
-                            <MapFilter options={[""].concat(HKG_DC_DISTRICTS_TC)} selected={filteredDistrict} />
-                        </div>
+                    <div className="flex bg-white justify-end p-2">
                         <button 
                             onClick={() => setIsOpen(false)}
                             className="ml-2 bg-gray-300 text-gray-800 rounded px-3 py-1 hover:bg-gray-400 transition duration-200"

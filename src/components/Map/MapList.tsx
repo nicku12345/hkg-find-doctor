@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store.ts";
 import { BusinessHour, Doctor, DoctorBusinessHours, WEEKDAYS } from "../../types/doctor.ts";
-import { isDoctorInBusinessHour } from "../../utils/doctor.ts";
+import { doctorToId, isDoctorInBusinessHour } from "../../utils/doctor.ts";
 import { Action } from "../../store/reducers/actions.ts";
 import { Dispatch } from "@reduxjs/toolkit";
 
@@ -178,89 +178,121 @@ const DoctorBusinessHoursView: React.FC<DoctorBusinessHoursViewProps> = ({ sched
     );
 };
 
+const MapFilter: React.FC = () => {
+    const { filterMedicalSpecialty } = useSelector((state: RootState) => state.doctorInfos);
+    const dispatch = useDispatch<Dispatch<Action>>()
+    const onSelectFilterMedicalSpecialty = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        dispatch({ type: "SET_FILTER_MEDICAL_SPECIALTY", payload: { filterMedicalSpecialty: e.target.value }})
+    }
+    return (
+        <div className="p-2 bg-white z-5 mb-3 shadow-md">
+            <label htmlFor="specialtyFilter" className="block text-lg font-medium text-gray-700 mb-2">
+                Filter by Specialty:
+            </label>
+            <select
+                id="specialtyFilter"
+                value={filterMedicalSpecialty}
+                onChange={onSelectFilterMedicalSpecialty}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50 p-2"
+            >
+                <option value="">-</option>
+                {specialties.map((specialty, index) => (
+                    <option key={index} value={specialty}>
+                        {specialty}
+                    </option>
+                ))}
+            </select>
+        </div>
+    )
+
+}
+
 export const MapList: React.FC = () => {
-    const { doctors } = useSelector((state: RootState) => state.doctorInfos);
-    const [selectedSpecialty, setSelectedSpecialty] = useState(specialties[0]);
+    const { doctors, selectedDoctor, filterMedicalSpecialty, isLoadingDoctorInfo } = useSelector((state: RootState) => state.doctorInfos);
+
     const dispatch = useDispatch<Dispatch<Action>>()
 
-    const filteredDoctors = selectedSpecialty
-        ? doctors.filter(doctor => selectedSpecialty === "" || doctor.medicalSpecialty === selectedSpecialty)
+    const filteredDoctors = filterMedicalSpecialty
+        ? doctors.filter(doctor => filterMedicalSpecialty === undefined || filterMedicalSpecialty === "" || doctor.medicalSpecialty === filterMedicalSpecialty)
         : doctors;
 
-    const handleDoctorOnClick = (doctor: Doctor) => {
+    const itemRefs = useRef<Map<string, HTMLElement>>(new Map())
+    const scrollToItem = (doctor) => {
+        const key = doctorToId(doctor);
+        if (itemRefs.current[key]) {
+            itemRefs.current[key].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
+    useEffect(() => {
+        if (selectedDoctor !== undefined) {
+            const timeoutId = setTimeout(() => scrollToItem(selectedDoctor), 500)
+            return () => clearTimeout(timeoutId)
+        }
+    }, [selectedDoctor, doctors])
+
+    const handleDoctorOnClick = (doctor: Doctor) => {
         dispatch({
-            type: "TOGGLE_MAP_CENTER_FLAG",
-            payload: { centerLatitude: doctor.addressLatitude, centerLongitude: doctor.addressLongitude }
+            type: "SET_SELECTED_DOCTOR",
+            payload: { selectedDoctor: doctor }
         })
     }
 
     return (
-        <div>
-            <div className="p-2 sticky top-0 bg-white z-5 mb-3 shadow-md">
-                <label htmlFor="specialtyFilter" className="block text-lg font-medium text-gray-700 mb-2">
-                    Filter by Specialty:
-                </label>
-                <select
-                    id="specialtyFilter"
-                    value={selectedSpecialty}
-                    onChange={(e) => setSelectedSpecialty(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-opacity-50 p-2"
-                >
-                    <option value="">-</option>
-                    {specialties.map((specialty, index) => (
-                        <option key={index} value={specialty}>
-                            {specialty}
-                        </option>
-                    ))}
-                </select>
-            </div>
-            <ul className="space-y-4 p-2">
-                {filteredDoctors.map((doctor, index) => {
-                    const doctorBusinessStatus = isDoctorInBusinessHour(JSON.parse(doctor.openingHours))
-                    return (
-                        <li key={doctor.doctorNameEN + index} className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between">
-                            <div className="flex-1">
-                                <div className="flex justify-between items-center bg-stone-100 hover:bg-stone-300 p-1 pl-2 pr-2 rounded" onClick={() => handleDoctorOnClick(doctor)}>
-                                    <h2 className="text-xl font-semibold text-gray-800">
-                                        {doctor.doctorNameEN} ({doctor.doctorNameTC})
-                                    </h2>
+        <div className="flex flex-col">
+            <MapFilter/>
+            <div className="flex-grow-1 overflow-y-scroll max-h-160">
+                <ul className="space-y-4 p-2">
+                    {filteredDoctors.map((doctor, index) => {
+                        const doctorBusinessStatus = isDoctorInBusinessHour(JSON.parse(doctor.openingHours))
+                        return (
+                            <li
+                                key={doctor.doctorNameEN + index}
+                                className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between"
+                                ref={(el) => (itemRefs.current[doctorToId(doctor)] = el)}
+                            >
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center bg-stone-100 hover:bg-stone-300 p-1 pl-2 pr-2 rounded" onClick={() => handleDoctorOnClick(doctor)}>
+                                        <h2 className="text-xl font-semibold text-gray-800">
+                                            {doctor.doctorNameEN} ({doctor.doctorNameTC})
+                                        </h2>
+                                        {
+                                            doctorBusinessStatus === "CLOSED" ? (
+                                                <span className="bg-red-200 text-red-800 p-2 rounded text-xs font-semibold">
+                                                    {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
+                                                </span>
+                                            ) : doctorBusinessStatus === "OPEN" ? (
+                                                <span className="bg-green-200 text-green-800 p-2 rounded text-xs font-semibold">
+                                                    {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
+                                                </span>
+                                            ) : null
+                                        }
+                                    </div>
+                                    <p className="text-gray-600"><strong>💉</strong> {doctor.medicalSpecialty}</p>
                                     {
-                                        doctorBusinessStatus === "CLOSED" ? (
-                                            <span className="bg-red-200 text-red-800 p-2 rounded text-xs font-semibold">
-                                                {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
-                                            </span>
-                                        ) : doctorBusinessStatus === "OPEN" ? (
-                                            <span className="bg-green-200 text-green-800 p-2 rounded text-xs font-semibold">
-                                                {isDoctorInBusinessHour(JSON.parse(doctor.openingHours))}
-                                            </span>
+                                        (JSON.parse(doctor.qualifications) as string[])
+                                            .filter(q => q.trim() !== "")
+                                            .map(qualification => (
+                                                <p className="text-gray-600"><strong>🎓</strong> {qualification}</p>
+                                            ))
+                                    }
+                                    {
+                                        doctor.telephone.trim() !== "" ? (
+                                            <p className="text-gray-600"><strong>☎️</strong> {doctor.telephone}</p>
                                         ) : null
                                     }
+                                    {
+                                        doctor.addressDesc.trim() !== "" ? (
+                                            <p className="text-gray-600"><strong>📍</strong> {doctor.addressDesc}</p>
+                                        ) : null
+                                    }
+                                    <DoctorBusinessHoursView schedule={JSON.parse(doctor.openingHours)}/>
                                 </div>
-                                <p className="text-gray-600"><strong>💉</strong> {doctor.medicalSpecialty}</p>
-                                {
-                                    (JSON.parse(doctor.qualifications) as string[])
-                                        .filter(q => q.trim() !== "")
-                                        .map(qualification => (
-                                            <p className="text-gray-600"><strong>🎓</strong> {qualification}</p>
-                                        ))
-                                }
-                                {
-                                    doctor.telephone.trim() !== "" ? (
-                                        <p className="text-gray-600"><strong>☎️</strong> {doctor.telephone}</p>
-                                    ) : null
-                                }
-                                {
-                                    doctor.addressDesc.trim() !== "" ? (
-                                        <p className="text-gray-600"><strong>📍</strong> {doctor.addressDesc}</p>
-                                    ) : null
-                                }
-                                <DoctorBusinessHoursView schedule={JSON.parse(doctor.openingHours)}/>
-                            </div>
-                        </li>
+                            </li>
+                        )}
                     )}
-                )}
-            </ul>
+                </ul>
+            </div>
         </div>
     );
 };

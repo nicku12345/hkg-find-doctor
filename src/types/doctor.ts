@@ -10,6 +10,11 @@ export type Doctor = {
     openingHours: string,
 }
 
+export type DoctorBusinessStatus =
+    "OPEN"
+    | "CLOSED"
+    | "NO_INFO"
+
 export type BusinessHour = 
     "NO_INFO"
     | "NO_BUSINESS"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState  } from 'react';
+import React, { useEffect, useRef, useState  } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, Popup } from 'react-leaflet';
 import type { RootState } from "../../store/store.ts";
 import { useDispatch, useSelector } from 'react-redux';
@@ -8,6 +8,8 @@ import { Dispatch } from "@reduxjs/toolkit";
 import { Action } from "../../store/reducers/actions.ts";
 import { getSupabaseClient } from "../../db/db.ts";
 import { Bounds } from "leaflet";
+import { marker } from "leaflet";
+import { doctorToId } from "../../utils/doctor.ts";
 
 const markerIcon = L.icon({
     iconUrl: '/map/marker-icon.png'
@@ -25,37 +27,45 @@ const LocationMarker: React.FC = () => {
 
     useEffect(() => {
         // Set the map view to the new position whenever it changes
-        console.log([centerLatitude, centerLongitude])
+        map.closePopup()
         map.setView([centerLatitude, centerLongitude], zoom)
     }, [mapCenterFlag, centerLatitude, centerLongitude]);
 
+    const timeoutRef = useRef<number>(null)
+
     useEffect(() => {
         const handleBoundsChange = () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current)
+            }
 
             // avoid loading DB when grid area is too large
             if (map.getZoom() <= 15) {
-
                 dispatch({ type: "SET_WARNING", payload: { warning: "Zoom in to load more doctors" }})
                 return
             }
 
             const bounds: Bounds = map.getBounds();
-            const minLat = bounds._southWest.lat - 0.0003
-            const minLong = bounds._southWest.lng - 0.0003
-            const maxLat = bounds._northEast.lat + 0.0003
-            const maxLong = bounds._northEast.lng + 0.0003
+            const minLat = bounds._southWest.lat - 0.0006
+            const minLong = bounds._southWest.lng - 0.0006
+            const maxLat = bounds._northEast.lat + 0.0006
+            const maxLong = bounds._northEast.lng + 0.0006
 
-            const supabase = getSupabaseClient();
-            supabase.rpc("get_doctors_in_bbox", {
-                min_lat: minLat,
-                min_long: minLong,
-                max_lat: maxLat,
-                max_long: maxLong
-            })
-            .limit(2000)
-            .then(({ data, error }) => {
-                dispatch({ type: "REFRESH_DOCTORS", payload: { doctors: data } })
-            });
+            timeoutRef.current = setTimeout(() => {
+                dispatch({ type: "SET_IS_LOADING_DOCTOR_INFO", payload: { isLoadingDoctorInfo: true } })
+                const supabase = getSupabaseClient();
+                supabase.rpc("get_doctors_in_bbox", {
+                    min_lat: minLat,
+                    min_long: minLong,
+                    max_lat: maxLat,
+                    max_long: maxLong
+                })
+                .limit(2000)
+                .then(({ data, error }) => {
+                    dispatch({ type: "REFRESH_DOCTORS", payload: { doctors: data } })
+                    dispatch({ type: "SET_IS_LOADING_DOCTOR_INFO", payload: { isLoadingDoctorInfo: false } })
+                });
+            }, 250)
         }
 
         map.on("moveend", handleBoundsChange)
@@ -63,17 +73,29 @@ const LocationMarker: React.FC = () => {
             map.off("moveend", handleBoundsChange)
         }
 
-    }, [map])
+    }, [])
 
     return <Marker position={[latitude, longitude]} icon={markerIcon}/>;
 };
 
 const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
-    const [popupVisible, setPopupVisible] = useState(false);
+    const { centerLatitude, centerLongitude } = useSelector((state: RootState) => state.geolocation)
+    const { selectedDoctor } = useSelector((state: RootState) => state.doctorInfos)
+    const myId = doctorToId(doctor)
+    const dispatch = useDispatch<Dispatch<Action>>()
+    const markerRef = useRef(null)
 
     const handleMarkerClick = () => {
-        setPopupVisible(true);
+        dispatch({ type: "SET_SELECTED_DOCTOR", payload: { selectedDoctor: doctor }})
     };
+
+    useEffect(() => {
+        const marker = markerRef.current
+        if (marker && selectedDoctor && doctorToId(selectedDoctor) == myId) {
+            marker.openPopup()
+        }
+
+    }, [selectedDoctor])
 
     return (
         <Marker
@@ -82,19 +104,16 @@ const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
                 click: handleMarkerClick,
             }}
             icon={doctorIcon}
+            ref={markerRef}
         >
-            {
-                popupVisible && (
-                    <Popup onClose={() => setPopupVisible(false)}>
-                        <h4 className="font-semibold">
-                            {doctor.doctorNameEN} ({doctor.doctorNameTC})
-                        </h4>
-                        <p><strong>Specialty:</strong> {doctor.medicalSpecialty}</p>
-                        <p><strong>Telephone:</strong> {doctor.telephone}</p>
-                        <p><strong>Address:</strong> {doctor.addressDesc}</p>
-                    </Popup>
-                )
-            }
+            <Popup interactive>
+                <h4 className="font-semibold">
+                    {doctor.doctorNameEN} ({doctor.doctorNameTC})
+                </h4>
+                <p><strong>Specialty:</strong> {doctor.medicalSpecialty}</p>
+                <p><strong>Telephone:</strong> {doctor.telephone}</p>
+                <p><strong>Address:</strong> {doctor.addressDesc}</p>
+            </Popup>
 
         </Marker>
     )
@@ -115,7 +134,7 @@ export const MapWidget: React.FC = () => {
             />
                 <LocationMarker position={position} />
                 {
-                    doctors.map((doctor, index) => <DoctorMarker key={`doctor-${index}`} doctor={doctor}/>)
+                    doctors.map((doctor, index) => <DoctorMarker key={`doctor-${doctor.doctorNameTC}`} doctor={doctor}/>)
                 }
             </MapContainer>
         </div>

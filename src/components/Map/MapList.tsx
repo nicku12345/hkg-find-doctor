@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store.ts";
-import { BusinessHour, DoctorBusinessHours, WEEKDAYS } from "../../types/doctor.ts";
+import { BusinessHour, Doctor, DoctorBusinessHours, WEEKDAYS } from "../../types/doctor.ts";
 import { isDoctorInBusinessHour } from "../../utils/doctor.ts";
+import { Action } from "../../store/reducers/actions.ts";
+import { Dispatch } from "@reduxjs/toolkit";
 
 // select "medicalSpecialty", count(1) from "DoctorInfo"
 // group by "medicalSpecialty"
 // order by count desc
+// -- switched dentists & general practioners
 const specialties = [
-    "牙科",
     "普通科",
+    "牙科",
     "外科",
     "婦產科",
     "兒科",
@@ -127,7 +130,7 @@ const DoctorBusinessHoursView: React.FC<DoctorBusinessHoursViewProps> = ({ sched
         <div className="mt-2 bg-stone-100 shadow-md rounded-lg">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 flex justify-between w-full text-left rounded bg-stone-100 text-gray-600 font-semibold hover:bg-stone-300 focus:outline-none"
+                className="p-2 flex justify-between w-full text-left rounded bg-stone-300 text-gray-600 font-semibold hover:bg-stone-400 focus:outline-none"
             >
                 <span>Business Hours</span>
                 <span>{isOpen ? '−' : '+'}</span>
@@ -177,11 +180,20 @@ const DoctorBusinessHoursView: React.FC<DoctorBusinessHoursViewProps> = ({ sched
 
 export const MapList: React.FC = () => {
     const { doctors } = useSelector((state: RootState) => state.doctorInfos);
-    const [selectedSpecialty, setSelectedSpecialty] = useState("");
+    const [selectedSpecialty, setSelectedSpecialty] = useState(specialties[0]);
+    const dispatch = useDispatch<Dispatch<Action>>()
 
     const filteredDoctors = selectedSpecialty
         ? doctors.filter(doctor => selectedSpecialty === "" || doctor.medicalSpecialty === selectedSpecialty)
         : doctors;
+
+    const handleDoctorOnClick = (doctor: Doctor) => {
+
+        dispatch({
+            type: "TOGGLE_MAP_CENTER_FLAG",
+            payload: { centerLatitude: doctor.addressLatitude, centerLongitude: doctor.addressLongitude }
+        })
+    }
 
     return (
         <div>
@@ -209,7 +221,7 @@ export const MapList: React.FC = () => {
                     return (
                         <li key={doctor.doctorNameEN + index} className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between">
                             <div className="flex-1">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center bg-stone-100 hover:bg-stone-300 p-1 pl-2 pr-2 rounded" onClick={() => handleDoctorOnClick(doctor)}>
                                     <h2 className="text-xl font-semibold text-gray-800">
                                         {doctor.doctorNameEN} ({doctor.doctorNameTC})
                                     </h2>

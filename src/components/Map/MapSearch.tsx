@@ -61,7 +61,7 @@ const MapFilter: React.FC<MapFilterProps> = ({ options, selected }) => {
 
 const MapSearch: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const { selectedLocationDesc, filteredDistrict } = useSelector((state: RootState) => state.geolocation)
+    const { latitude, longitude, selectedLocationDesc, filteredDistrict } = useSelector((state: RootState) => state.geolocation)
     const [suggestedMapLocations, setSuggestedMapLocations] = useState<MapLocation[]>([]);
     const dispatch = useDispatch<Dispatch<Action>>()
 
@@ -93,7 +93,10 @@ const MapSearch: React.FC = () => {
 
     const handleMapFocus = () => {
         // this will make the Map View focus on "myLocation"
-        dispatch({ type: "TOGGLE_MAP_CENTER_FLAG" })
+        dispatch({
+            type: "TOGGLE_MAP_CENTER_FLAG",
+            payload: { centerLatitude: latitude, centerLongitude: longitude }
+        })
     }
 
     const getLocationNavigator = () => {

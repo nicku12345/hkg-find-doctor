@@ -19,14 +19,15 @@ const doctorIcon = L.icon({
 
 const LocationMarker: React.FC = () => {
     const map = useMap();
-    const { latitude, longitude, zoom } = useSelector((state: RootState) => state.geolocation)
+    const { centerLatitude, centerLongitude, zoom, latitude, longitude } = useSelector((state: RootState) => state.geolocation)
     const { mapCenterFlag } = useSelector((state: RootState) => state.geolocation)
     const dispatch = useDispatch<Dispatch<Action>>()
 
     useEffect(() => {
         // Set the map view to the new position whenever it changes
-            map.setView([latitude, longitude], zoom)
-    }, [mapCenterFlag, latitude, longitude]);
+        console.log([centerLatitude, centerLongitude])
+        map.setView([centerLatitude, centerLongitude], zoom)
+    }, [mapCenterFlag, centerLatitude, centerLongitude]);
 
     useEffect(() => {
         const handleBoundsChange = () => {
@@ -100,15 +101,15 @@ const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
 }
 
 export const MapWidget: React.FC = () => {
-    const { latitude, longitude, zoom } = useSelector((state: RootState) => state.geolocation)
+    const { centerLatitude, centerLongitude, zoom } = useSelector((state: RootState) => state.geolocation)
     const { doctors } = useSelector((state: RootState) => state.doctorInfos)
 
-    const position: [number, number] = [latitude, longitude];
+    const position: [number, number] = [centerLatitude, centerLongitude];
 
     return (
         <div className="z-0 !important">
             <MapContainer center={position} zoom={zoom} style={{ height: '30vh', width: '100%' }}>
-<TileLayer
+            <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />

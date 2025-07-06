@@ -8,7 +8,6 @@ export type DoctorBusinessStatus =
 
 export const isDoctorInBusinessHour = (schedule: DoctorBusinessHours): DoctorBusinessStatus => {
     const currentDate = new Date()
-    const options = { timeZone: 'Asia/Hong_Kong', hour: '2-digit', hour12: false };
     const currentWeekday = (currentDate.getDay()+6)%7  // getDay() = 0 for Sunday
 
     const key = WEEKDAYS[currentWeekday]
@@ -16,10 +15,9 @@ export const isDoctorInBusinessHour = (schedule: DoctorBusinessHours): DoctorBus
     if (openingHoursForWeekday === undefined)
         return "NO_INFO"
 
-    const timeInHKG = new Intl.DateTimeFormat('en-US', options).format(currentDate);
 
     // Split the formatted time into hours and minutes
-    const [hourInHKG, minuteInHKG] = timeInHKG.split(':').map(Number);
+    const [hourInHKG, minuteInHKG] = [currentDate.getHours(), currentDate.getMinutes()]
     const convertToInt = (h: number, m: number) => h*60 + m
 
     if (openingHoursForWeekday === "NO_BUSINESS")

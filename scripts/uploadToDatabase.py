@@ -22,7 +22,7 @@ def main():
         connection.execute(text("DROP TABLE IF EXISTS \"DoctorInfo\" CASCADE"))
         connection.commit()
 
-    with open("./data/doctor_index_urls.json", "r") as f:
+    with open("./data/doctor_index_urls.json", "r", encoding="utf-8") as f:
         doctor_index_urls = json.load(f)
 
     for i in range(len(doctor_index_urls)):

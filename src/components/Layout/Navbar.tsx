@@ -8,7 +8,7 @@ export const Navbar: React.FC = () => {
         dispatch({ type: "SET_TAB", payload: { id: tabId } })
     }
     return (
-        <nav className="bg-gray-500 p-2 sticky top-0 z-50">
+        <nav className="bg-gray-500 p-2 sticky top-0 z-10000">
             <div className="container mx-auto flex justify-between items-center">
                 <div className="text-white text-lg font-semibold">
                     👨🏻‍⚕️HKG Find Doctor

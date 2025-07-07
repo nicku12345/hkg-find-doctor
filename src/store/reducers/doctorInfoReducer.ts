@@ -1,4 +1,4 @@
-import { Doctor, DoctorBusinessStatus } from "../../types/doctor.ts";
+import { Doctor, DoctorBusinessStatus, MEDICAL_SPECIALTIES } from "../../types/doctor.ts";
 
 type DoctorInfoState = {
     doctors: Doctor[],
@@ -14,7 +14,7 @@ const initialState: DoctorInfoState = {
     doctors: [],
     selectedDoctor: undefined,
 
-    filterMedicalSpecialty: undefined,
+    filterMedicalSpecialty: MEDICAL_SPECIALTIES[0],
     filterBusinessStatus: undefined,
 
     isLoadingDoctorInfo: false,

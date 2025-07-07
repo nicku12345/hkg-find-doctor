@@ -183,7 +183,7 @@ def fetch_doctor_info(url: str) -> dict:
         "doctorNameTC": get_doctor_name_tc(soup),
         "doctorNameEN": get_doctor_name_en(soup),
         "telephone": get_telephone(soup),
-        "medicalSpecialty": get_medical_specialty(soup),
+        "medicalSpecialtyDetailed": get_medical_specialty(soup),
         "addressDesc": get_address_desc(soup),
         "addressLatitude": get_address_latitude(soup),
         "addressLongitude": get_address_longitude(soup),
@@ -205,15 +205,16 @@ def fetch_doctor_urls(page: str) -> list[str]:
     
     return doctor_urls
 
-
 def main(args):
     all_pages = []
 
     # produced by getDoctorIndexUrls.py
-    with open("./data/doctor_index_urls.json", "r") as f:
+    with open("./data/doctor_index_urls.json", "r", encoding="utf-8") as f:
         doctor_index_urls = json.load(f)
 
-    url = doctor_index_urls[args.index]
+    url = doctor_index_urls[args.index]["url"]
+    medical_specialty = doctor_index_urls[args.index]["medicalSpecialty"]
+
     soup = get_soup(url)
     jump_menu = soup.find("select", id="jumpMenu")
     pages = [option["value"].strip("/") for option in jump_menu.find_all("option") if option.has_attr("value")]
@@ -239,6 +240,10 @@ def main(args):
             if result is not None:
                 doctor_infos.append(result)
         
+    # POST fetch enrichment
+    for doctor_info in doctor_infos:
+        doctor_info["medicalSpecialty"] = medical_specialty
+
     df = pd.DataFrame(doctor_infos)
     
     df.to_parquet(f"./data/doctor_info_{args.index}.parquet", index=False)

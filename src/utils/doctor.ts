@@ -33,5 +33,5 @@ export const isDoctorInBusinessHour = (schedule: DoctorBusinessHours): DoctorBus
 }
 
 export const doctorToId = (doctor: Doctor): string => {
-    return `${doctor.doctorNameTC}-${doctor.addressLatitude}-${doctor.addressLongitude}`
+    return `${doctor.doctorNameTC}-${doctor.medicalSpecialtyDetailed}-${doctor.medicalSpecialty}-${doctor.addressLatitude}-${doctor.addressLongitude}`
 }

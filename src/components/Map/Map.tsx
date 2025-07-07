@@ -5,13 +5,15 @@ import { connectAndQuery } from "../../db/db.ts";
 import { useDispatch } from "react-redux";
 import { MapList } from "./MapList.tsx";
 import MapSearch from "./MapSearch.tsx";
+import { MapFilter } from "./MapFilter.tsx";
 
 
 export const Map: React.FC = () => {
     return (
-        <div className="flex flex-col h-[calc(100vh-112px)]">
+        <div>
             <MapSearch/>
             <MapWidget/>
+            <MapFilter/>
             <MapList/>
         </div>
     );

@@ -8,8 +8,7 @@ import { Dispatch } from "@reduxjs/toolkit";
 import { Action } from "../../store/reducers/actions.ts";
 import { getSupabaseClient } from "../../db/db.ts";
 import { Bounds } from "leaflet";
-import { marker } from "leaflet";
-import { doctorToId } from "../../utils/doctor.ts";
+import { doctorToId, isDoctorInBusinessHour } from "../../utils/doctor.ts";
 
 const markerIcon = L.icon({
     iconUrl: '/map/marker-icon.png'
@@ -79,7 +78,6 @@ const LocationMarker: React.FC = () => {
 };
 
 const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
-    const { centerLatitude, centerLongitude } = useSelector((state: RootState) => state.geolocation)
     const { selectedDoctor } = useSelector((state: RootState) => state.doctorInfos)
     const myId = doctorToId(doctor)
     const dispatch = useDispatch<Dispatch<Action>>()
@@ -107,34 +105,43 @@ const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
             ref={markerRef}
         >
             <Popup interactive>
-                <h4 className="font-semibold">
+                <h4 className="font-semibold text-base text-gray-800">
                     {doctor.doctorNameEN} ({doctor.doctorNameTC})
                 </h4>
-                <p><strong>Specialty:</strong> {doctor.medicalSpecialty}</p>
-                <p><strong>Telephone:</strong> {doctor.telephone}</p>
-                <p><strong>Address:</strong> {doctor.addressDesc}</p>
+                <p className="text-gray-600">
+                    💉 {doctor.medicalSpecialtyDetailed}
+                </p>
+                <p className="text-gray-600">
+                    ☎️ {doctor.telephone}
+                </p>
+                <p className="text-gray-600">
+                    📍 {doctor.addressDesc}
+                </p>
             </Popup>
-
         </Marker>
     )
 }
 
 export const MapWidget: React.FC = () => {
     const { centerLatitude, centerLongitude, zoom } = useSelector((state: RootState) => state.geolocation)
-    const { doctors } = useSelector((state: RootState) => state.doctorInfos)
+    const { doctors, filterMedicalSpecialty, filterBusinessStatus } = useSelector((state: RootState) => state.doctorInfos)
 
     const position: [number, number] = [centerLatitude, centerLongitude];
 
+    const filteredDoctors: Doctor[] = doctors
+        .filter(doctor => filterMedicalSpecialty === undefined || filterMedicalSpecialty === "" || doctor.medicalSpecialty === filterMedicalSpecialty)
+        .filter(doctor => filterBusinessStatus?.length>0 ? filterBusinessStatus?.includes(isDoctorInBusinessHour(JSON.parse(doctor.openingHours))) : true )
+
     return (
         <div className="z-0 !important">
-            <MapContainer center={position} zoom={zoom} style={{ height: '30vh', width: '100%' }}>
+            <MapContainer center={position} zoom={zoom} style={{ height: '30vh', width: '100%', zIndex: 0 }}>
             <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
                 <LocationMarker position={position} />
                 {
-                    doctors.map((doctor, index) => <DoctorMarker key={`doctor-${doctor.doctorNameTC}`} doctor={doctor}/>)
+                    filteredDoctors.map((doctor, index) => <DoctorMarker key={doctorToId(doctor)} doctor={doctor}/>)
                 }
             </MapContainer>
         </div>

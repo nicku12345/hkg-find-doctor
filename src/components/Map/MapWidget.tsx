@@ -78,7 +78,7 @@ const LocationMarker: React.FC = () => {
 };
 
 const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
-    const { selectedDoctor } = useSelector((state: RootState) => state.doctorInfos)
+    const { selectedDoctor, selectedDoctorTriggered } = useSelector((state: RootState) => state.doctorInfos)
     const myId = doctorToId(doctor)
     const dispatch = useDispatch<Dispatch<Action>>()
     const markerRef = useRef(null)
@@ -92,10 +92,9 @@ const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
         if (marker && selectedDoctor && doctorToId(selectedDoctor) == myId) {
             marker.openPopup()
         }
+    }, [selectedDoctor, selectedDoctorTriggered])
 
-    }, [selectedDoctor])
-
-    return (
+    return React.useMemo(() => (
         <Marker
             position={[doctor.addressLatitude, doctor.addressLongitude]}
             eventHandlers={{
@@ -105,30 +104,62 @@ const DoctorMarker: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
             ref={markerRef}
         >
             <Popup interactive>
-                <h4 className="font-semibold text-base text-gray-800">
-                    {doctor.doctorNameEN} ({doctor.doctorNameTC})
-                </h4>
-                <p className="text-gray-600">
-                    💉 {doctor.medicalSpecialtyDetailed}
-                </p>
-                <p className="text-gray-600">
-                    ☎️ {doctor.telephone}
-                </p>
-                <p className="text-gray-600">
-                    📍 {doctor.addressDesc}
-                </p>
+                <div className="min-w[calc(12vw)] max-w-[calc(36vw)] -mr-2 -ml-2">
+                    <h2 className="font-semibold text-base text-gray-800 bg-stone-100 p-1 rounded mb-1">
+                        {doctor.doctorNameTC}
+                        <span className="block text-xs text-gray-600">
+                            {doctor.doctorNameEN}
+                        </span>
+                    </h2>
+                    <table className="min-w-full">
+                        <tbody>
+                            <tr>
+                                <td className="p-1 text-gray-600">
+                                    💉
+                                </td>
+                                <td className="p-1 text-gray-600">
+                                    {doctor.medicalSpecialtyDetailed}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="p-1 text-gray-600">
+                                    ☎️
+                                </td>
+                                <td className="p-1 text-gray-600">
+                                    {doctor.telephone}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="p-1 text-gray-600">
+                                    📍
+                                </td>
+                                <td className="p-1 text-gray-600">
+                                    {doctor.addressDesc}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </Popup>
         </Marker>
-    )
+    ), [doctor])
 }
 
 export const MapWidget: React.FC = () => {
     const { centerLatitude, centerLongitude, zoom } = useSelector((state: RootState) => state.geolocation)
-    const { doctors, filterMedicalSpecialty, filterBusinessStatus } = useSelector((state: RootState) => state.doctorInfos)
+    const { doctors, selectedDoctor, filterMedicalSpecialty, filterBusinessStatus } = useSelector((state: RootState) => state.doctorInfos)
 
     const position: [number, number] = [centerLatitude, centerLongitude];
 
-    const filteredDoctors: Doctor[] = doctors
+    // TODO: consolidate the logic, MapList component also has logic to derive filteredDoctors
+    // They need to be consistent inorder to avoid rerendering of the popup of the selectedDoctor
+    // Rerendering causes blinking/flickering of the popup component
+    // https://github.com/akursat/react-leaflet-cluster/issues/38
+    const filteredDoctors: Doctor[] = (
+            selectedDoctor === undefined
+            ? doctors
+            : [selectedDoctor].concat(doctors.filter(doctor => doctorToId(doctor) !== doctorToId(selectedDoctor)))
+        )
         .filter(doctor => filterMedicalSpecialty === undefined || filterMedicalSpecialty === "" || doctor.medicalSpecialty === filterMedicalSpecialty)
         .filter(doctor => filterBusinessStatus?.length>0 ? filterBusinessStatus?.includes(isDoctorInBusinessHour(JSON.parse(doctor.openingHours))) : true )
 

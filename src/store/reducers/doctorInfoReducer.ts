@@ -3,6 +3,7 @@ import { Doctor, DoctorBusinessStatus, MEDICAL_SPECIALTIES } from "../../types/d
 type DoctorInfoState = {
     doctors: Doctor[],
     selectedDoctor?: Doctor,
+    selectedDoctorTriggered: boolean,
     
     filterMedicalSpecialty?: string,
     filterBusinessStatus?: DoctorBusinessStatus[],
@@ -13,6 +14,7 @@ type DoctorInfoState = {
 const initialState: DoctorInfoState = {
     doctors: [],
     selectedDoctor: undefined,
+    selectedDoctorTriggered: false,
 
     filterMedicalSpecialty: MEDICAL_SPECIALTIES[0],
     filterBusinessStatus: undefined,
@@ -33,7 +35,11 @@ export const doctorInfoReducer = (state = initialState, action: Action): DoctorI
             return { ...state, doctors: action.payload.doctors }
 
         case "SET_SELECTED_DOCTOR":
-            return { ...state, selectedDoctor: action.payload.selectedDoctor }
+            return {
+                ...state,
+                selectedDoctor: action.payload.selectedDoctor, 
+                selectedDoctorTriggered: !state.selectedDoctorTriggered,
+            }
         
         case "SET_FILTER_MEDICAL_SPECIALTY":
             return { ...state, filterMedicalSpecialty: action.payload.filterMedicalSpecialty }
